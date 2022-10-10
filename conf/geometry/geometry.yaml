@@ -1,6 +1,9 @@
 defaults:
   - main_branch: rca
-  - side_branch: am
+  - side_branch:
+    - am
+    - pda
+    - sa
   - centerline: original
   - stenoses: no_stenoses
   - projections: original
