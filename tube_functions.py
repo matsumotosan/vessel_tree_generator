@@ -311,7 +311,7 @@ def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample
 
     centerlines = [parent_curve]
     derivatives = [curve_derivative]
-    connections=[None]
+    connections = [None]
     for i in range(num_branches):
         branch_length = side_branch_properties[i+1]["length"] * random.uniform(0.8, 1.2)
         positions = (np.array(side_branch_properties[i+1]["parametric_position"]) * sample_size).astype("int")
@@ -363,4 +363,5 @@ def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample
         centerlines.append(branch_C)
         derivatives.append(dC)
         connections.append(pos)
+        
     return centerlines, derivatives, connections

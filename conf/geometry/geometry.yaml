@@ -6,7 +6,6 @@ defaults:
     - sa
   - centerline: original
   - stenoses: no_stenoses
-  - projections: original
 
 num_trees: 10
 num_branches: 0

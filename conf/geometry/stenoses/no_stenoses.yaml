@@ -1,7 +1,9 @@
-num: None
+n_stenoses: 0
 constant_radius: True
-severity: []
-position: []
+severity: None
+position: None
+length: None
+type: "gaussian"
 num_points: []
 max_radius: None
 min_radius: None

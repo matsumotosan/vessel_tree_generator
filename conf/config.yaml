@@ -1,7 +1,6 @@
 defaults:
+  - output: output
   - geometry: geometry
+  - projections: projections
 
-save_path: trees
-dataset_name: test
-save_visualization: True
 random_seed: 3

@@ -2,6 +2,22 @@ from tube_functions import *
 
 
 def generate_main_branch(vessel_type, length, n_points, **kwargs):
+    """Generates main branch for a given vessel type.
+    
+    Parameters:
+        vessel_type: str
+            Vessel type
+        length: float
+            Length of vessel centerline
+        n_points: int
+            Number of centerline points
+    
+    Returns:
+        main_C: ndarray of shape (N, 3)
+            centerline points
+        main_dC: ndarray of shape (N - 1, 3)
+            derivatives of centerline points
+    """
     if vessel_type == 'cylinder':
         main_C, main_dC = cylinder(length, n_points)
     elif vessel_type == 'spline':
