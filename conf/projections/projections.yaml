@@ -1,2 +1,5 @@
-generate_projections: False
+generate_projections: True
 num_projections: 3
+image_dim: 512
+pixel_spacing: 0.35
+sid: 1.2

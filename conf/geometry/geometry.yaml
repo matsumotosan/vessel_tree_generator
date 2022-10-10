@@ -9,4 +9,5 @@ defaults:
 
 num_trees: 10
 num_branches: 0
+num_theta: 120
 vessel_type: RCA

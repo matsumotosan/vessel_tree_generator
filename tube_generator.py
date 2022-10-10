@@ -6,7 +6,6 @@ from tqdm import tqdm
 
 import numpy as np
 import random
-import json
 
 from fwd_projection_functions import *
 from generate_main_branch import generate_main_branch
@@ -57,12 +56,14 @@ def main(cfg: DictConfig) -> None:
             curve_type=cfg.geometry.vessel_type
         )
 
-        vessel_info = {'spline_index': int(spline_idx),
-                'tree_type': [],
-                'num_centerline_points': num_centerline_points,
-                'theta_array': [],
-                'phi_array': [],
-                'main_vessel': deepcopy(cfg.geometry.main_branch)}
+        vessel_info = {
+            'spline_index': int(spline_idx),
+            'tree_type': [],
+            'num_centerline_points': num_centerline_points,
+            'theta_array': [],
+            'phi_array': [],
+            'main_vessel': deepcopy(cfg.geometry.main_branch)
+            }
 
         # default is RCA; LCx/LAD single vessels and LCA tree will be implemented in future
         vessel_info["tree_type"].append(cfg.geometry.vessel_type)
@@ -71,10 +72,9 @@ def main(cfg: DictConfig) -> None:
             vessel_info[f"branch{branch_index + 1}"] = deepcopy(cfg.geometry.branches)
 
         # Generate radial/surface coordinates for centerline
-        num_theta = 120
-        spline_array_list = []
-        surface_coords = []
-        coords = np.empty((0,3))
+        spline_array_list = []      # centerline + radial coordinate
+        surface_coords = []         # (x,y,z) surface coordinates
+        coords = np.empty((0, 3))
         skip = False
         
         for tree_idx, (C, dC) in enumerate(zip(tree, dtree)):
@@ -98,31 +98,42 @@ def main(cfg: DictConfig) -> None:
             stenosis_pos = None
             num_stenosis_points = None
 
+            # Generate surface for given centerline
             try:
-                X,Y,Z, new_radius_vec, percent_stenosis, stenosis_pos, num_stenosis_points = get_vessel_surface(C, dC, connections, supersampled_num_centerline_points, num_theta, max_radius,
-                                                                                                         is_main_branch=main_is_true,
-                                                                                                         num_stenoses=cfg.geometry.stenoses.n_stenoses,
-                                                                                                         constant_radius=cfg.geometry.stenoses.constant_radius,
-                                                                                                         stenosis_severity=cfg.geometry.stenoses.severity,
-                                                                                                         stenosis_position=cfg.geometry.stenoses.position,
-                                                                                                         stenosis_length=cfg.geometry.stenoses.length,
-                                                                                                         stenosis_type=cfg.geometry.stenoses.type,
-                                                                                                         return_surface=True)
+                X, Y, Z, R, percent_stenosis, stenosis_pos, num_stenosis_points = get_vessel_surface(C,
+                                                                                                     dC,
+                                                                                                     connections,
+                                                                                                     supersampled_num_centerline_points,
+                                                                                                     cfg.geometry.num_theta,
+                                                                                                     max_radius,
+                                                                                                     is_main_branch=main_is_true,
+                                                                                                     num_stenoses=cfg.geometry.stenoses.n_stenoses,
+                                                                                                     constant_radius=cfg.geometry.stenoses.constant_radius,
+                                                                                                     stenosis_severity=cfg.geometry.stenoses.severity,
+                                                                                                     stenosis_position=cfg.geometry.stenoses.position,
+                                                                                                     stenosis_length=cfg.geometry.stenoses.length,
+                                                                                                     stenosis_type=cfg.geometry.stenoses.type,
+                                                                                                     return_surface=True
+                                                                                                     )
             except ValueError:
                 print(f"Invalid sampling, skipping {tree_idx}.")
                 skip = True
                 continue
 
-            spline_array = np.concatenate((C, np.expand_dims(new_radius_vec, axis=-1)), axis=1)[::jj,:]
+            # Append to list of centerline + radial coordinate
+            spline_array = np.concatenate((C, np.expand_dims(R, axis=-1)), axis=1)[::jj,:]
             spline_array_list.append(spline_array)
 
-            branch_coords = np.stack((X.T,Y.T,Z.T)).T
+            # Append to list of surface coordinates (x,y,z) by branch
+            branch_coords = np.stack((X, Y, Z), axis=2)
             surface_coords.append(branch_coords)
-            coords = np.concatenate((coords,np.stack((X.flatten(), Y.flatten(), Z.flatten())).T))
+            
+            # Append to array coordinates of entire vessel
+            coords = np.concatenate((coords, np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=1)))
 
             # vessel_info[key]['num_stenoses'] = int(rand_stenoses)
-            # vessel_info[key]['max_radius'] = float(new_radius_vec[0]*1000)
-            # vessel_info[key]['min_radius'] = float(new_radius_vec[-1]*1000)
+            # vessel_info[key]['max_radius'] = float(R[0]*1000)
+            # vessel_info[key]['min_radius'] = float(R[-1]*1000)
             # if connections[tree_idx] is not None:
             #     vessel_info[key]['branch_point'] = int(connections[tree_idx]/jj)
             # if rand_stenoses > 0:
@@ -142,35 +153,38 @@ def main(cfg: DictConfig) -> None:
 
         # Generate projections of vessel surface (optionally)
         if cfg.projections.generate_projections:
-            img_dim = 512
-            ImagerPixelSpacing = 0.35
-            SID = 1.2
-
-            vessel_info["ImagerPixelSpacing"] = ImagerPixelSpacing
-            vessel_info["SID"] = SID
+            vessel_info["ImagerPixelSpacing"] = cfg.projections.pixel_spacing
+            vessel_info["SID"] = cfg.projections.sid
 
             # centering vessel at origin for cone-beam projections
             centered_coords = np.subtract(coords, np.mean(surface_coords[0].reshape(-1,3), axis=0))
-            use_RCA_angles = cfg.vessel_type == "RCA"
-            images, theta_array, phi_array = generate_projection_images(centered_coords, spline_idx,
-                                                                        cfg.projections.num_projections, img_dim, cfg.save_path, cfg.dataset_name,
-                                                                        ImagerPixelSpacing, SID, RCA=use_RCA_angles)
-            vessel_info['theta_array'] = [float(i) for i in theta_array.tolist()]
-            vessel_info['phi_array'] = [float(j) for j in phi_array.tolist()]
+            use_RCA_angles = cfg.geometry.vessel_type == "RCA"
+            images, theta_array, phi_array = generate_projection_images(
+                centered_coords,
+                spline_idx,
+                cfg.projections.num_projections,
+                cfg.projections.image_dim,
+                cfg.output.save_dir,
+                cfg.output.dataset_name,
+                cfg.projections.pixel_spacing,
+                cfg.projections.sid,
+                RCA=use_RCA_angles
+            )
+            vessel_info['theta_array'] = theta_array.tolist()
+            vessel_info['phi_array'] = phi_array.tolist()
 
-        # #saves geometry as npy file (X,Y,Z,R) matrix
-        # if not os.path.exists(os.path.join(cfg.output.save_dir, cfg.dataset_name, "labels", cfg.dataset_name)):
-        #     os.makedirs(os.path.join(cfg.output.save_dir, cfg.dataset_name, "labels", cfg.dataset_name))
-        # if not os.path.exists(os.path.join(cfg.output.save_dir, cfg.dataset_name, "info")):
-        #     os.makedirs(os.path.join(cfg.output.save_dir, cfg.dataset_name, "info"))
+        # Save generated geometry (x, y, z, r)
+        if not os.path.exists(os.path.join(cfg.output.save_dir, cfg.output.dataset_name, "labels", cfg.output.dataset_name)):
+            os.makedirs(os.path.join(cfg.output.save_dir, cfg.output.dataset_name, "labels", cfg.dataset_name))
+        if not os.path.exists(os.path.join(cfg.output.save_dir, cfg.output.dataset_name, "info")):
+            os.makedirs(os.path.join(cfg.output.save_dir, cfg.output.dataset_name, "info"))
 
-        # #saves geometry as npy file (X,Y,Z,R) matrix
-        # tree_array = np.array(spline_array_list)
-        # np.save(os.path.join(cfg.output.save_dir, cfg.dataset_name, "labels", cfg.dataset_name, "{:04d}".format(spline_idx)), tree_array)
+        tree_array = np.array(spline_array_list)
+        np.save(os.path.join(cfg.output.save_dir, cfg.output.dataset_name, "labels", cfg.output.dataset_name, "{:04d}".format(spline_idx)), tree_array)
 
-        # # writes a text file for each tube with relevant parameters used to generate the geometry
-        # with open(os.path.join(cfg.output.save_dir, cfg.dataset_name, "info", "{:04d}.info.0".format(spline_idx)), 'w+') as outfile:
-        #     json.dump(vessel_info, outfile, indent=2)
+        # Save geometry generation specs in json
+        json_path = os.path.join(cfg.output.save_dir, cfg.output.dataset_name, "info", "{:04d}.info.0".format(spline_idx))
+        save_specs(json_path, vessel_info)
 
 
 if __name__ == "__main__":
