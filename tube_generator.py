@@ -1,85 +1,35 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from fwd_projection_functions import *
 import os
-from tube_functions import *
 import random
 import json
 import copy
-import argparse
+from argparse import ArgumentParser
 
-# general: required arguments
-parser = argparse.ArgumentParser('3D vessel tree generator')
-parser.add_argument('--save_path', default=None, type=str, required=True)
-parser.add_argument('--dataset_name', default="test", type=str)
-parser.add_argument('--num_trees', default=10, type=int)
-parser.add_argument('--save_visualization', action='store_true', help="this flag will plot the generated 3D surfaces and save it as a PNG")
-
-# centerlines: optional
-parser.add_argument('--num_branches', default=0, type=int,
-                    help="Number of side branches. Set to 0 for no side branches")
-parser.add_argument('--vessel_type', default="RCA", type=str, help="Options are: 'cylinder, 'spline', and 'RCA'")
-parser.add_argument('--control_point_path', default="./RCA_branch_control_points/moderate", type=str)
-parser.add_argument('--num_centerline_points', default=200, type=int)
-parser.add_argument('--centerline_supersampling', default=1, type=int, help="factor by which to super-sample centerline points when generating vessel surface")
-parser.add_argument('--shear', action='store_true', help="add random shear augmentation")
-parser.add_argument('--warp', action='store_true', help="add random warping augmentation")
-
-#radii/stenoses: optional
-parser.add_argument('--constant_radius', action='store_true')
-parser.add_argument('--num_stenoses', default=None, type=int)
-parser.add_argument('--stenosis_position', nargs="*", default=None, type=int)
-parser.add_argument('--stenosis_severity', nargs="*", default=None, type=float)
-parser.add_argument('--stenosis_length', nargs="*", default=None, type=int, help="number of points in radius vector where stenosis will be introduced")
+from fwd_projection_functions import *
+from tube_functions import *
+from utils import *
 
 
-#projections: optional
-parser.add_argument('--generate_projections', action="store_true")
-parser.add_argument('--num_projections', default=3, type=int,
-                    help="number of random projection images to generate")
-# TODO: specify angles/windows for random projections
-args = parser.parse_args()
+def main(args):
+    # if generating single vessels, can modify this dict to include appropriate parameters for other vessels
+    main_branch_properties = {
+        1: {"name": "RCA", "min_length": 0.120, "max_length": 0.140, "max_diameter": 0.005}, #units in [m] not [mm]
+        2: {"name": "LAD", "min_length": 0.100, "max_length": 0.130, "max_diameter": 0.005},
+        3: {"name": "LCx", "min_length": 0.080, "max_length": 0.100, "max_diameter": 0.0045},
+    }
 
-random.seed(3)
-rng = np.random.default_rng()
+    # these values correspond to RCA tree branches, can modify for other trees
+    side_branch_properties = {
+        1: {"name": "SA", "length": 0.035, "min_radius": 0.0009, "max_radius": 0.0011, "parametric_position": [0.03, 0.12]},
+        2: {"name": "AM", "length": 0.0506, "min_radius": 0.001, "max_radius": 0.0012, "parametric_position": [0.18, 0.35]},
+        3: {"name": "PDA", "length": 0.055, "min_radius": 0.001, "max_radius": 0.0012, "parametric_position": [0.55, 0.65]}
+    }
 
-save_path = args.save_path
-dataset_name=args.dataset_name
-num_trees = args.num_trees
-
-if not os.path.exists(save_path):
-    os.makedirs(save_path)
-    print("created {}".format(save_path))
-if not os.path.exists(os.path.join(save_path,dataset_name)):
-    os.makedirs(os.path.join(save_path,dataset_name))
-    print("created {}".format(os.path.join(save_path,dataset_name)))
-
-jj = args.centerline_supersampling
-num_projections = args.num_projections
-num_centerline_points = args.num_centerline_points # number of interpolated centerline points to save
-supersampled_num_centerline_points = jj * num_centerline_points #use larger number of centerline points to create solid surface for projections, if necessary
-num_branches = args.num_branches  # set to 0 if not adding side branches
-order = 3
-
-# if generating single vessels, can modify this dict to include appropriate parameters for other vessels
-main_branch_properties = {
-    1: {"name": "RCA", "min_length": 0.120, "max_length": 0.140, "max_diameter": 0.005}, #units in [m] not [mm]
-    2: {"name": "LAD", "min_length": 0.100, "max_length": 0.130, "max_diameter": 0.005},
-    3: {"name": "LCx", "min_length": 0.080, "max_length": 0.100, "max_diameter": 0.0045},
-}
-
-# these values correspond to RCA tree branches, can modify for other trees
-side_branch_properties = {
-    1: {"name": "SA", "length": 0.035, "min_radius": 0.0009, "max_radius": 0.0011, "parametric_position": [0.03, 0.12]},
-    2: {"name": "AM", "length": 0.0506, "min_radius": 0.001, "max_radius": 0.0012, "parametric_position": [0.18, 0.35]},
-    3: {"name": "PDA", "length": 0.055, "min_radius": 0.001, "max_radius": 0.0012, "parametric_position": [0.55, 0.65]}
-}
-
-vessel_dict = {'num_stenoses': None, 'stenosis_severity': [], 'stenosis_position': [],
-           'num_stenosis_points': [], 'max_radius': None, 'min_radius': None, 'branch_point': None}
-
-if __name__ == "__main__":
+    vessel_dict = {'num_stenoses': None, 'stenosis_severity': [], 'stenosis_position': [],
+            'num_stenosis_points': [], 'max_radius': None, 'min_radius': None, 'branch_point': None}
+    
     for i in range(num_trees):
         spline_index = i
         if (i+1)%10 == 0:
@@ -224,3 +174,36 @@ if __name__ == "__main__":
         # writes a text file for each tube with relevant parameters used to generate the geometry
         with open(os.path.join(save_path, dataset_name, "info", "{:04d}.info.0".format(spline_index)), 'w+') as outfile:
             json.dump(vessel_info, outfile, indent=2)
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser('3D vessel tree generator')
+    parser = add_general_parser_args(parser)
+    parser = add_centerline_parser_args(parser)
+    parser = add_stenosis_parser_args(parser)
+    parser = add_projection_parser_args(parser)
+
+    args = parser.parse_args()
+    
+    random.seed(3)
+    rng = np.random.default_rng()
+
+    save_path = args.save_path
+    dataset_name=args.dataset_name
+    num_trees = args.num_trees
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+        print("created {}".format(save_path))
+    if not os.path.exists(os.path.join(save_path,dataset_name)):
+        os.makedirs(os.path.join(save_path,dataset_name))
+        print("created {}".format(os.path.join(save_path,dataset_name)))
+
+    jj = args.centerline_supersampling
+    num_projections = args.num_projections
+    num_centerline_points = args.num_centerline_points # number of interpolated centerline points to save
+    supersampled_num_centerline_points = jj * num_centerline_points #use larger number of centerline points to create solid surface for projections, if necessary
+    num_branches = args.num_branches  # set to 0 if not adding side branches
+    order = 3
+    
+    main(args)
