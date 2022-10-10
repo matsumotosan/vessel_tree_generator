@@ -1,0 +1,10 @@
+defaults:
+  - main_branch: rca
+  - side_branch: am
+  - centerline: original
+  - stenoses: no_stenoses
+  - projections: original
+
+num_trees: 10
+num_branches: 0
+vessel_type: RCA

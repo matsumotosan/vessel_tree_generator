@@ -1,0 +1,5 @@
+name:       "SA"
+length:     0.035
+min_radius: 0.0009
+max_radius: 0.0011
+parametric_position: [0.03, 0.12]

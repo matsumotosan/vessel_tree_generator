@@ -1,0 +1,5 @@
+name:       "AM"
+length:     0.0506
+min_radius: 0.001
+max_radius: 0.0012
+parametric_position: [0.18, 0.35]

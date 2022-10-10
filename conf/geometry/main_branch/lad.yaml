@@ -1,0 +1,4 @@
+name:         "LAD"
+min_length:   0.100
+max_length:   0.130
+max_diameter: 0.005

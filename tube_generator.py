@@ -1,65 +1,75 @@
-import numpy as np
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 import os
+import hydra
+from omegaconf import DictConfig, OmegaConf
+from copy import deepcopy
+
+import numpy as np
 import random
 import json
-import copy
-from argparse import ArgumentParser
 
 from fwd_projection_functions import *
 from tube_functions import *
 from utils import *
 
 
-def main(args):
-    # if generating single vessels, can modify this dict to include appropriate parameters for other vessels
-    main_branch_properties = {
-        1: {"name": "RCA", "min_length": 0.120, "max_length": 0.140, "max_diameter": 0.005}, #units in [m] not [mm]
-        2: {"name": "LAD", "min_length": 0.100, "max_length": 0.130, "max_diameter": 0.005},
-        3: {"name": "LCx", "min_length": 0.080, "max_length": 0.100, "max_diameter": 0.0045},
-    }
+@hydra.main(version_base=None, config_path="conf", config_name="config")
+def main(cfg: DictConfig) -> None:
+    # Print config to console
+    print(f"Generating vessels with config:\n{OmegaConf.to_yaml(cfg)}")
+    
+    # Prepare directory to store generated vessels
+    save_path = cfg.save_path
+    dataset_name = cfg.dataset_name
+    create_nested_dir(cfg.save_path, cfg.dataset_name)
+    
+    random.seed(cfg.random_seed)
+    rng = np.random.default_rng()
+    
+    num_trees = cfg.geometry.num_trees
 
-    # these values correspond to RCA tree branches, can modify for other trees
-    side_branch_properties = {
-        1: {"name": "SA", "length": 0.035, "min_radius": 0.0009, "max_radius": 0.0011, "parametric_position": [0.03, 0.12]},
-        2: {"name": "AM", "length": 0.0506, "min_radius": 0.001, "max_radius": 0.0012, "parametric_position": [0.18, 0.35]},
-        3: {"name": "PDA", "length": 0.055, "min_radius": 0.001, "max_radius": 0.0012, "parametric_position": [0.55, 0.65]}
-    }
-
-    vessel_dict = {'num_stenoses': None, 'stenosis_severity': [], 'stenosis_position': [],
-            'num_stenosis_points': [], 'max_radius': None, 'min_radius': None, 'branch_point': None}
+    jj = cfg.geometry.centerline.centerline_supersampling
+    num_projections = cfg.geometry.projections.num_projections
+    num_centerline_points = cfg.geometry.num_centerline_points # number of interpolated centerline points to save
+    supersampled_num_centerline_points = jj * num_centerline_points #use larger number of centerline points to create solid surface for projections, if necessary
+    num_branches = cfg.geometry.num_branches  # set to 0 if not adding side branches
+    order = 3
     
     for i in range(num_trees):
         spline_index = i
-        if (i+1)%10 == 0:
-            print("Completed {}/{} vessels".format(spline_index+1, num_trees))
+        if (i + 1) % 10 == 0:
+            print(f"Completed {spline_index + 1}/{num_trees} vessels.")
 
         #############################
         # Construct main branch     #
         #############################
-        vessel_info = {'spline_index': int(spline_index), 'tree_type': [], 'num_centerline_points': num_centerline_points, 'theta_array': [], 'phi_array': [], 'main_vessel': copy.deepcopy(vessel_dict)}
+        vessel_info = {'spline_index': int(spline_index),
+                       'tree_type': [],
+                       'num_centerline_points': num_centerline_points,
+                       'theta_array': [],
+                       'phi_array': [],
+                       'main_vessel': deepcopy(cfg.branches.main)}
+        
         for branch_index in range(num_branches):
-            vessel_info["branch{}".format(branch_index + 1)] = copy.deepcopy(vessel_dict)
+            vessel_info[f"branch{branch_index + 1}"] = deepcopy(cfg.geometry.branches)
 
         # default is RCA; LCx/LAD single vessels and LCA tree will be implemented in future
         branch_ID = 1
-        vessel_info["tree_type"].append(main_branch_properties[branch_ID]["name"])
+        vessel_info["tree_type"].append("RCA")
 
-        length = random.uniform(main_branch_properties[branch_ID]['min_length'], main_branch_properties[branch_ID]['max_length']) # convert to [m] to stay consistent with projection setup
+        length = random.uniform(cfg.branches.main[branch_ID]['min_length'], cfg.branches.main[branch_ID]['max_length']) # convert to [m] to stay consistent with projection setup
         sample_size = supersampled_num_centerline_points
 
-        if args.vessel_type == 'cylinder':
+        if cfg.geometry.vessel_type == 'cylinder':
             main_C, main_dC = cylinder(length, supersampled_num_centerline_points)
-        elif args.vessel_type == 'spline':
+        elif cfg.geometry.vessel_type == 'spline':
             main_C, main_dC = random_spline(length, order, np.random.randint(order + 1, 10), sample_size)
         else:
-            RCA_control_points = np.load(os.path.join(args.control_point_path, "RCA_ctrl_points.npy")) / 1000 # [m] instead of [mm]
+            RCA_control_points = np.load(os.path.join(cfg.geometry.control_point_path, "RCA_ctrl_points.npy")) / 1000 # [m] instead of [mm]
             mean_ctrl_pts = np.mean(RCA_control_points, axis=0)
             stdev_ctrl_pts = np.std(RCA_control_points, axis=0)
-            main_C, main_dC = RCA_vessel_curve(sample_size, mean_ctrl_pts, stdev_ctrl_pts, length, rng, shear=args.shear, warp=args.warp)
+            main_C, main_dC = RCA_vessel_curve(sample_size, mean_ctrl_pts, stdev_ctrl_pts, length, rng, shear=cfg.shear, warp=cfg.warp)
 
-        tree, dtree, connections = branched_tree_generator(main_C, main_dC, num_branches, sample_size, side_branch_properties, curve_type=args.vessel_type)
+        tree, dtree, connections = branched_tree_generator(main_C, main_dC, num_branches, sample_size, cfg.branches.side, curve_type=cfg.vessel_type)
 
         num_theta = 120
         spline_array_list = []
@@ -77,11 +87,11 @@ def main(args):
                 rand_stenoses = np.random.randint(0, 3)
                 key = "main_vessel"
                 main_is_true = True
-                max_radius = [random.uniform(0.004, main_branch_properties[branch_ID]['max_diameter']) / 2]
+                max_radius = [random.uniform(0.004, cfg.branches.main[branch_ID]['max_diameter']) / 2]
 
             else:
                 rand_stenoses = np.random.randint(0, 2)
-                max_radius = [random.uniform(side_branch_properties[ind]['min_radius'], side_branch_properties[ind]['max_radius'])]
+                max_radius = [random.uniform(cfg.branches.side[ind]['min_radius'], cfg.branches.side[ind]['max_radius'])]
                 key = "branch{}".format(ind)
                 main_is_true = False
 
@@ -89,21 +99,21 @@ def main(args):
             stenosis_pos = None
             num_stenosis_points = None
 
-            if args.num_stenoses is not None:
-                rand_stenoses = args.num_stenoses
+            if cfg.num_stenoses is not None:
+                rand_stenoses = cfg.num_stenoses
 
             try:
                 X,Y,Z, new_radius_vec, percent_stenosis, stenosis_pos, num_stenosis_points = get_vessel_surface(C, dC, connections, supersampled_num_centerline_points, num_theta, max_radius,
                                                                                                          is_main_branch = main_is_true,
                                                                                                          num_stenoses=rand_stenoses,
-                                                                                                         constant_radius=args.constant_radius,
-                                                                                                         stenosis_severity=args.stenosis_severity,
-                                                                                                         stenosis_position=args.stenosis_position,
-                                                                                                         stenosis_length=args.stenosis_length,
+                                                                                                         constant_radius=cfg.constant_radius,
+                                                                                                         stenosis_severity=cfg.stenosis_severity,
+                                                                                                         stenosis_position=cfg.stenosis_position,
+                                                                                                         stenosis_length=cfg.stenosis_length,
                                                                                                          stenosis_type="gaussian",
                                                                                                          return_surface=True)
             except ValueError:
-                print("Invalid sampling, skipping {}".format(i))
+                print(f"Invalid sampling, skipping {i}.")
                 skip = True
                 continue
 
@@ -127,24 +137,15 @@ def main(args):
         if skip:
             continue
 
-        # optional: plot 3D surface
-        if args.save_visualization:
+        # Plot 3D surface
+        if cfg.save_visualization:
             if i < 10:
-                fig = plt.figure(figsize=(2,2), dpi=200, constrained_layout=True)
-                ax = fig.add_subplot(projection=Axes3D.name)
-                ax.view_init(elev=20., azim=-70)
-                for surf_coords in surface_coords:
-                    ax.plot_surface(surf_coords[:,:,0], surf_coords[:,:,1], surf_coords[:,:,2], alpha=0.5, color="blue")
-                set_axes_equal(ax)
-                plt.axis('off')
-                # plt.show()
-                plt.savefig(os.path.join(save_path, dataset_name, "{:04d}_3Dsurface".format(spline_index)), bbox_inches='tight')
-                plt.close()
+                plot_surface(surface_coords, os.path.join(save_path, dataset_name, f"{spline_index:4d}_3Dsurface"))
 
         ###################################
         ######       projections     ######
         ###################################
-        if args.generate_projections:
+        if cfg.generate_projections:
             img_dim = 512
             ImagerPixelSpacing = 0.35
             SID = 1.2
@@ -154,7 +155,7 @@ def main(args):
 
             # centering vessel at origin for cone-beam projections
             centered_coords = np.subtract(coords, np.mean(surface_coords[0].reshape(-1,3), axis=0))
-            use_RCA_angles = args.vessel_type == "RCA"
+            use_RCA_angles = cfg.vessel_type == "RCA"
             images, theta_array, phi_array = generate_projection_images(centered_coords, spline_index,
                                                                         num_projections, img_dim, save_path, dataset_name,
                                                                         ImagerPixelSpacing, SID, RCA=use_RCA_angles)
@@ -177,33 +178,4 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser('3D vessel tree generator')
-    parser = add_general_parser_args(parser)
-    parser = add_centerline_parser_args(parser)
-    parser = add_stenosis_parser_args(parser)
-    parser = add_projection_parser_args(parser)
-
-    args = parser.parse_args()
-    
-    random.seed(3)
-    rng = np.random.default_rng()
-
-    save_path = args.save_path
-    dataset_name=args.dataset_name
-    num_trees = args.num_trees
-
-    if not os.path.exists(save_path):
-        os.makedirs(save_path)
-        print("created {}".format(save_path))
-    if not os.path.exists(os.path.join(save_path,dataset_name)):
-        os.makedirs(os.path.join(save_path,dataset_name))
-        print("created {}".format(os.path.join(save_path,dataset_name)))
-
-    jj = args.centerline_supersampling
-    num_projections = args.num_projections
-    num_centerline_points = args.num_centerline_points # number of interpolated centerline points to save
-    supersampled_num_centerline_points = jj * num_centerline_points #use larger number of centerline points to create solid surface for projections, if necessary
-    num_branches = args.num_branches  # set to 0 if not adding side branches
-    order = 3
-    
-    main(args)
+    main()

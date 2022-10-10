@@ -1,0 +1,55 @@
+save_path: trees
+dataset_name: test
+save_visualization: True
+random_seed: 3
+geometry: # units in meters
+  num_trees: 10
+  num_branches: 0
+  vessel_type: "RCA"
+  control_point_path: "./RCA_branch_control_points/moderate"
+  num_centerline_points: 200
+  centerline_supersampling: 1
+  shear: True
+  warp: True
+  branches:
+    main:
+      RCA:
+        min_length:   0.120
+        max_length:   0.140
+        max_diameter: 0.005
+      LAD:
+        min_length:   0.100
+        max_length:   0.130
+        max_diameter: 0.005
+      LCx:
+        min_length:   0.080
+        max_length:   0.100
+        max_diameter: 0.0045
+    side:
+      SA:
+        length:     0.035
+        min_radius: 0.0009
+        max_radius: 0.0011
+        parametric_position: [0.03, 0.12]
+      AM:
+        length:     0.0506
+        min_radius: 0.001
+        max_radius: 0.0012
+        parametric_position: [0.18, 0.35]
+      PDA:
+        length:     0.055
+        min_radius: 0.001
+        max_radius: 0.0012
+        parametric_position: [0.55, 0.65]
+  stenoses:
+    num: None
+    constant_radius: True
+    severity: []
+    position: []
+    num_points: []
+    max_radius: None
+    min_radius: None
+    branch_point: None
+  projections:
+    generate_projections: True
+    num_projections: 3

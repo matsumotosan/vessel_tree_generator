@@ -1,0 +1,4 @@
+name:         "LCX"
+min_length:   0.080
+max_length:   0.100
+max_diameter: 0.0045

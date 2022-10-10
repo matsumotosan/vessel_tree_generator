@@ -1,0 +1,4 @@
+name:         "RCA"
+min_length:   0.120
+max_length:   0.140
+max_diameter: 0.005
