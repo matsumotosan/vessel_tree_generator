@@ -1,4 +1,4 @@
-from tube_functions import *
+from src.tube_functions import *
 
 
 def generate_main_branch(vessel_type, min_length, max_length, n_points, **kwargs):

@@ -7,11 +7,11 @@ from omegaconf import OmegaConf
 from copy import deepcopy
 from tqdm import tqdm
 
-from config import VesselConfig
-from fwd_projection_functions import *
-from generate_main_branch import generate_main_branch
-from tube_functions import *
-from utils import *
+from src.config import VesselConfig
+from src.fwd_projection_functions import *
+from src.generate_main_branch import generate_main_branch
+from src.tube_functions import *
+from src.utils import *
 
 
 cs = ConfigStore.instance()
@@ -101,21 +101,22 @@ def main(cfg: VesselConfig) -> None:
 
             # Generate surface for given centerline
             try:
-                X, Y, Z, R, percent_stenosis, stenosis_pos, num_stenosis_points = get_vessel_surface(C,
-                                                                                                     dC,
-                                                                                                     connections,
-                                                                                                     supersampled_num_centerline_points,
-                                                                                                     cfg.geometry.num_theta,
-                                                                                                     max_radius,
-                                                                                                     is_main_branch=is_main_branch,
-                                                                                                     num_stenoses=cfg.geometry.stenoses.n_stenoses,
-                                                                                                     constant_radius=cfg.geometry.stenoses.constant_radius,
-                                                                                                     stenosis_severity=cfg.geometry.stenoses.severity,
-                                                                                                     stenosis_position=cfg.geometry.stenoses.position,
-                                                                                                     stenosis_length=cfg.geometry.stenoses.length,
-                                                                                                     stenosis_type=cfg.geometry.stenoses.type,
-                                                                                                     return_surface=True
-                                                                                                     )
+                surface, R, percent_stenosis, stenosis_pos, num_stenosis_points = get_vessel_surface(
+                    curve=C,
+                    derivatives=dC,
+                    branch_points=connections,
+                    num_centerline_points=supersampled_num_centerline_points,
+                    num_circle_points=cfg.geometry.num_theta,
+                    radius=max_radius,
+                    is_main_branch=is_main_branch,
+                    num_stenoses=cfg.geometry.stenoses.n_stenoses,
+                    constant_radius=cfg.geometry.stenoses.constant_radius,
+                    stenosis_severity=cfg.geometry.stenoses.severity,
+                    stenosis_position=cfg.geometry.stenoses.position,
+                    stenosis_length=cfg.geometry.stenoses.length,
+                    stenosis_type=cfg.geometry.stenoses.type,
+                    return_surface=True
+                    )
             except ValueError:
                 print(f"Invalid sampling, skipping {tree_idx}.")
                 skip = True
@@ -126,11 +127,10 @@ def main(cfg: VesselConfig) -> None:
             spline_array_list.append(spline_array)
 
             # Append to list of surface coordinates (x,y,z) by branch
-            branch_coords = np.stack((X, Y, Z), axis=2)
-            surface_coords.append(branch_coords)
+            surface_coords.append(surface)
             
             # Append to array coordinates of entire vessel
-            coords = np.concatenate((coords, np.stack((X.flatten(), Y.flatten(), Z.flatten()), axis=1)))
+            coords = np.concatenate((coords, surface.reshape(-1, 3)))
 
             # Update vessel_info dict for branch
             # vessel_info[key]['num_stenoses'] = int(rand_stenoses)

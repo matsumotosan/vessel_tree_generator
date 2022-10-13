@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from fwd_projection_functions import set_axes_equal
+from src.fwd_projection_functions import set_axes_equal
 
 
 def plot_surface(surface_coords, filename=None, show=False) -> None:

@@ -1,8 +1,8 @@
 from geomdl import BSpline, utilities, operations
 import numpy as np
-from fwd_projection_functions import *
+from src.fwd_projection_functions import *
 import random
-from augmentation import shear_centerlines, warp1
+from src.augmentation import shear_centerlines, warp1
 
 # we use the random library instead of numpy.random for most functions due to
 # issues with numpy generating identical random numbers when using multiprocessing
@@ -303,11 +303,8 @@ def get_vessel_surface(
 
     surface = np.array(surface)
 
-    X = np.squeeze(surface[:,:,0])
-    Y = np.squeeze(surface[:,:,1])
-    Z = np.squeeze(surface[:,:,2])
+    return surface, new_r, percent_stenosis, stenosis_pos, num_stenosis_points
 
-    return X, Y, Z, new_r, percent_stenosis, stenosis_pos, num_stenosis_points
 
 def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample_size, side_branch_properties, curve_type="spline"):
     '''
