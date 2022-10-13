@@ -1,7 +1,7 @@
 from tube_functions import *
 
 
-def generate_main_branch(vessel_type, length, n_points, **kwargs):
+def generate_main_branch(vessel_type, min_length, max_length, n_points, **kwargs):
     """Generates main branch for a given vessel type.
     
     Parameters:
@@ -18,6 +18,10 @@ def generate_main_branch(vessel_type, length, n_points, **kwargs):
         main_dC: ndarray of shape (N - 1, 3)
             derivatives of centerline points
     """
+    # Randomly sample centerline length
+    length = random.uniform(min_length, max_length)
+
+    # Construct vessel according to type
     if vessel_type == 'cylinder':
         main_C, main_dC = cylinder(length, n_points)
     elif vessel_type == 'spline':

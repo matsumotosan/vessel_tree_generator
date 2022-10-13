@@ -195,9 +195,22 @@ def stenosis_generator(num_stenoses, radius_vector, branch_points, is_main = Tru
         vessel_stenosis_positions = stenosis_position
     return new_radius_vector, stenosis_severity, vessel_stenosis_positions, len_stenosis
 
-def get_vessel_surface(curve, derivatives, branch_points, num_centerline_points, num_circle_points, radius, num_stenoses=0,
-                       is_main_branch=True, constant_radius=True, stenosis_severity=None, stenosis_position=None,
-                       stenosis_length=None, stenosis_type="gaussian", return_surface=False):
+def get_vessel_surface(
+    curve,
+    derivatives,
+    branch_points,
+    num_centerline_points,
+    num_circle_points,
+    radius,
+    num_stenoses=0,
+    is_main_branch=True,
+    constant_radius=True,
+    stenosis_severity=None,
+    stenosis_position=None,
+    stenosis_length=None,
+    stenosis_type="gaussian",
+    return_surface=False
+):
     '''
     Generates a tubular surface with specified radius around any arbitrary centerline curve
     :param curve: Nx3 array of 3D points in centerline curve

@@ -1,4 +1,3 @@
-control_point_path: "RCA_branch_control_points/moderate"
 num_centerline_points: 200
 supersampling: 1
 shear: True

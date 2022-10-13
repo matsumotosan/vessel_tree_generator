@@ -1,6 +1,6 @@
 defaults:
-  - output: output
+  - paths: paths
+  - files: files
+  - flags: flags
   - geometry: geometry
   - projections: projections
-
-random_seed: 3
