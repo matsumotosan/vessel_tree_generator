@@ -323,8 +323,8 @@ def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample
     derivatives = [curve_derivative]
     connections = [None]
     for i in range(num_branches):
-        branch_length = side_branch_properties[i+1]["length"] * random.uniform(0.8, 1.2)
-        positions = (np.array(side_branch_properties[i+1]["parametric_position"]) * sample_size).astype("int")
+        branch_length = side_branch_properties[i]["length"] * random.uniform(0.8, 1.2)
+        positions = (np.array(side_branch_properties[i]["parametric_position"]) * sample_size).astype("int")
         pos = random.randint(positions[0], positions[1])
         if i > 0:
             while np.any(np.abs(np.array(connections[1:])-pos) < 0.07*sample_size):
@@ -361,7 +361,7 @@ def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample
             # can adjust rotations if branches are crossing/overlapping etc.
             rotations = np.array([[-10+random.randint(0,5)*(-1)**random.getrandbits(1),0], [0, 15+random.randint(0,5)*(-1)**random.getrandbits(1)], [-10+random.randint(0,5)*(-1)**random.getrandbits(1),10]])
             rng = np.random.default_rng()
-            control_points = np.load(os.path.join('RCA_branch_control_points/moderate', "{}_ctrl_points.npy".format(side_branch_properties[i+1]["name"]))) / 1000
+            control_points = np.load(os.path.join('RCA_branch_control_points/moderate', "{}_ctrl_points.npy".format(side_branch_properties[i]["name"]))) / 1000
             mean_ctrl_pts = np.mean(control_points, axis=0)
             stdev_ctrl_pts = np.std(control_points, axis=0)
 

@@ -1,13 +1,9 @@
 defaults:
-  - main_branch: rca
-  - side_branch:
-    - am
-    - pda
-    - sa
+  - main_branch: cylinder
+  - side_branch: am
   - centerline: original
   - stenoses: no_stenoses
 
-num_trees: 10
-num_branches: 0
+num_branches: 2
 num_theta: 120
 vessel_type: RCA

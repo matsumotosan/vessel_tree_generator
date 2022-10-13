@@ -2,6 +2,19 @@ from dataclasses import dataclass
 from typing import List, Union
 
 
+__all__ = [
+    "Paths",
+    "Files",
+    "Flags",
+    "Centerline",
+    "Branch",
+    "Stenosis",
+    "Geometry",
+    "Projection",
+    "VesselConfig"
+]
+
+
 @dataclass
 class Paths:
     """Class for storing path-related parameters."""
@@ -25,7 +38,7 @@ class Flags:
 @dataclass
 class Centerline:
     """Class for storing centerline-related parameters."""
-    num_points: int
+    n_points: int
     supersampling: int
     shear: bool
     warp: bool
@@ -39,6 +52,7 @@ class Branch:
     max_diameter: float
     control_point_path: str
     parametric_position: List
+    children: Union[None, List['Branch']]
 
 @dataclass
 class Stenosis:
@@ -58,9 +72,10 @@ class Stenosis:
 class Geometry:
     """Super class for storing geometry-related parameters."""
     centerline: Centerline
-    branches: List[Branch]
+    main_branch: Branch
+    side_branches: List[Branch]
     stenosis: Stenosis
-
+    
 @dataclass
 class Projection:
     """Class for storing projection-related parameters."""

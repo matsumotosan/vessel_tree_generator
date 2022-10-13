@@ -1,3 +1,3 @@
 save_dir: trees
-dataset_name: test
+dataset_name: test_cylinder
 control_point_path: "RCA_branch_control_points/moderate"

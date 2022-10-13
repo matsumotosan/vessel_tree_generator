@@ -17,9 +17,13 @@ from src.utils import *
 cs = ConfigStore.instance()
 cs.store(name="vessel_config", node=VesselConfig)
 
+
 @hydra.main(version_base=None, config_path="conf", config_name="config")
 def main(cfg: VesselConfig) -> None:
     print(f"Generating vessels with config:\n{OmegaConf.to_yaml(cfg)}")
+
+    # Hacky method of creating list of side branches
+    cfg.geometry.side_branch = [cfg.geometry.side_branch] * cfg.geometry.num_branches
 
     # Prepare directory to store generated vessels
     create_nested_dir(cfg.paths.save_dir, cfg.paths.dataset_name)
@@ -33,7 +37,7 @@ def main(cfg: VesselConfig) -> None:
     num_centerline_points = cfg.geometry.centerline.num_centerline_points # number of interpolated centerline points to save
     supersampled_num_centerline_points = jj * num_centerline_points #use larger number of centerline points to create solid surface for projections, if necessary
     
-    for spline_idx in tqdm(range(cfg.geometry.num_trees)):
+    for spline_idx in tqdm(range(cfg.n_trees)):
         # Construct main branch centerline
         main_C, main_dC = generate_main_branch(
             vessel_type=cfg.geometry.vessel_type,
@@ -66,8 +70,8 @@ def main(cfg: VesselConfig) -> None:
             'main_vessel': deepcopy(cfg.geometry.main_branch)
             }
 
-        for branch_index in range(cfg.geometry.num_branches):
-            vessel_info[f"branch{branch_index + 1}"] = deepcopy(cfg.geometry.branches)
+        # for branch_index in range(cfg.geometry.num_branches):
+        #     vessel_info[f"branch{branch_index + 1}"] = deepcopy(cfg.geometry.branches)
 
         # Generate radial/surface coordinates for centerline
         spline_array_list = []      # centerline + radial coordinate
@@ -89,9 +93,13 @@ def main(cfg: VesselConfig) -> None:
                 
                 rand_stenoses = np.random.randint(0, 2)
                 max_radius = [
+                    # random.uniform(
+                    #     cfg.geometry.side_branch[tree_idx].min_radius,
+                    #     cfg.geometry.side_branch[tree_idx].max_radius
+                    # )
                     random.uniform(
-                        cfg.geometry.side_branch[tree_idx].min_radius,
-                        cfg.geometry.side_branch[tree_idx].max_radius
+                        cfg.geometry.side_branch[tree_idx - 1].min_radius,
+                        cfg.geometry.side_branch[tree_idx - 1].max_radius
                     )
                 ]
 

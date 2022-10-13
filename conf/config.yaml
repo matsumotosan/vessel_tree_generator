@@ -4,3 +4,5 @@ defaults:
   - flags: flags
   - geometry: geometry
   - projections: projections
+
+n_trees: 10
