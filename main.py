@@ -24,7 +24,7 @@ def main(cfg: VesselConfig) -> None:
     print(f"Generating vessels with config:\n{OmegaConf.to_yaml(cfg)}")
 
     # Hacky method of creating list of side branches
-    cfg.geometry.side_branch = [cfg.geometry.side_branch] * cfg.geometry.num_branches
+    cfg.geometry.side_branch = [cfg.geometry.side_branch] * cfg.geometry.n_branches
 
     # Prepare directory to store generated vessels
     create_nested_dir(cfg.paths.save_dir, cfg.paths.dataset_name)
@@ -52,10 +52,10 @@ def main(cfg: VesselConfig) -> None:
         )
 
         # Construct side branches centerlines (add to main branch)
-        tree, dtree, connections = branched_tree_generator(
+        tree, dtree, connections = generate_side_branches(
             main_C,
             main_dC,
-            cfg.geometry.num_branches,
+            cfg.geometry.n_branches,
             supersampled_num_centerline_points,
             cfg.geometry.side_branch,
             curve_type=cfg.geometry.vessel_type

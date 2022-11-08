@@ -57,8 +57,8 @@ class Branch:
 @dataclass
 class Stenosis:
     """Class for storing stenosis-related parameters."""
-    num_stenoses: Union[int, None]
-    num_points: List
+    n_stenoses: Union[int, None]
+    n_points: List
     constant_radius: bool
     severity: Union[int, None]
     position: Union[int, None]
@@ -75,12 +75,13 @@ class Geometry:
     main_branch: Branch
     side_branches: List[Branch]
     stenosis: Stenosis
-    
+    # n_branches: int = len(side_branches)
+
 @dataclass
 class Projection:
     """Class for storing projection-related parameters."""
     generate_projections: bool
-    num_projections: bool
+    n_projections: bool
     image_dim: int
     pixel_spacing: float
     sid: float

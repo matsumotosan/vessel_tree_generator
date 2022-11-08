@@ -306,7 +306,14 @@ def get_vessel_surface(
     return surface, new_r, percent_stenosis, stenosis_pos, num_stenosis_points
 
 
-def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample_size, side_branch_properties, curve_type="spline"):
+def generate_side_branches(
+    parent_curve,
+    parent_curve_derivative,
+    num_branches,
+    sample_size,
+    side_branch_properties,
+    curve_type="spline"
+):
     '''
     Generates centerlines of branches that attach to parent curve at random locations
     parent_curve: Nx3 array of centerline points and radii
@@ -320,7 +327,7 @@ def branched_tree_generator(parent_curve, curve_derivative, num_branches, sample
         ValueError("Unknown curve_type. Possible types are \"spline\", \"cylinder\", or \"RCA\"")
 
     centerlines = [parent_curve]
-    derivatives = [curve_derivative]
+    derivatives = [parent_curve_derivative]
     connections = [None]
     for i in range(num_branches):
         branch_length = side_branch_properties[i]["length"] * random.uniform(0.8, 1.2)
