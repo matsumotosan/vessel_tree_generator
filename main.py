@@ -14,6 +14,7 @@ from src.tube_functions import *
 from src.utils import *
 
 
+# Initialize VesselConfig object
 cs = ConfigStore.instance()
 cs.store(name="vessel_config", node=VesselConfig)
 

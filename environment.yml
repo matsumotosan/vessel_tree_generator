@@ -1,0 +1,10 @@
+name: blood
+channels:
+  - defaults
+dependencies:
+  - matplotlib
+  - numpy
+  - scikit-image
+  - geomdl
+  - hydra-core
+  - tqdm
