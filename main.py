@@ -2,6 +2,7 @@ import os
 import hydra
 import random
 import numpy as np
+
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 from copy import deepcopy
@@ -10,6 +11,8 @@ from tqdm import tqdm
 from src.config import VesselConfig
 from src.fwd_projection_functions import *
 from src.generate_main_branch import generate_main_branch
+from src.generate_side_branches import generate_side_branches
+from src.get_vessel_surface import get_vessel_surface
 from src.tube_functions import *
 from src.utils import *
 
@@ -93,14 +96,9 @@ def main(cfg: VesselConfig) -> None:
                 is_main_branch = False
                 
                 rand_stenoses = np.random.randint(0, 2)
-                max_radius = [
-                    # random.uniform(
-                    #     cfg.geometry.side_branch[tree_idx].min_radius,
-                    #     cfg.geometry.side_branch[tree_idx].max_radius
-                    # )
-                    random.uniform(
-                        cfg.geometry.side_branch[tree_idx - 1].min_radius,
-                        cfg.geometry.side_branch[tree_idx - 1].max_radius
+                max_radius = [random.uniform(
+                    cfg.geometry.side_branch[tree_idx - 1].min_radius,
+                    cfg.geometry.side_branch[tree_idx - 1].max_radius
                     )
                 ]
 
@@ -115,7 +113,7 @@ def main(cfg: VesselConfig) -> None:
                     derivatives=dC,
                     branch_points=connections,
                     num_centerline_points=supersampled_num_centerline_points,
-                    num_circle_points=cfg.geometry.num_theta,
+                    num_circle_points=cfg.geometry.n_theta,
                     radius=max_radius,
                     is_main_branch=is_main_branch,
                     num_stenoses=cfg.geometry.stenoses.n_stenoses,
