@@ -43,23 +43,28 @@ def main(cfg: VesselConfig) -> None:
         # Generate vessel centerlines
         pbar.set_description(f"Generating vessel {idx:04d} centerline".ljust(MSG_WIDTH))
         generator.generate_tree()
-        if cfg.flags.save_specs:
-            generator.save_tree(
-                os.path.join(tree_dir, "specs", f"vessel_{idx:04d}_specs")
-            )
+        # generator.save_specs(
+        #     os.path.join(tree_dir, "specs", f"vessel_{idx:04d}_specs")
+        # )
 
         # Generate vessel surface
         pbar.set_description(f"Generating vessel {idx:04d} surface".ljust(MSG_WIDTH))
         generator.generate_surface()
         generator.save_surface(
             os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface"),
-            cfg.flags.plot_surface
+            split_by_branch=cfg.flags.split_by_branch
         )
+        if cfg.flags.save_surface_plot:
+            generator.save_surface_plot(
+                os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface"),
+            )
 
         # Generate projections
         if cfg.flags.generate_projections:
             pbar.set_description(f"Generating vessel {idx:04d} projections".ljust(MSG_WIDTH))
             generator.generate_projections(idx)
+
+    print(f"Finished generating {cfg.n_trees} vessels.")
 
 
 if __name__ == "__main__":

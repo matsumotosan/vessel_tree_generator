@@ -32,9 +32,9 @@ class Files:
 class Flags:
     """Class for storing various options and flags."""
     random_seed: int
+    split_by_branch: bool
+    save_surface_plot: bool
     generate_projections: bool
-    plot_surface: bool
-    save_specs: bool
 
 @dataclass
 class Centerline:

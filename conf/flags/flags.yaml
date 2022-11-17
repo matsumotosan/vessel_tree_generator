@@ -1,4 +1,4 @@
 random_seed: 0
-plot_surface: False
-save_specs: False
+split_by_branch: True
+save_surface_plot: True
 generate_projections: True

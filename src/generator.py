@@ -70,14 +70,6 @@ class Generator:
             curve_type=self.geometry.vessel_type
         )
 
-    def save_tree(self, filename: str) -> None:
-        """Save vessel tree specifications in dict.
-        
-        Args:
-            filename (str): json file name.
-        """
-        save_specs(filename, self.vessel_specs)
-
     def generate_surface(self) -> None:
         """General vessel surface from centerlines."""
         # Generate radial/surface coordinates for centerline
@@ -135,15 +127,35 @@ class Generator:
             
             # Append to array coordinates of entire vessel
             self.coords = np.concatenate((self.coords, surface.reshape(-1, 3)))
+    
+    def save_surface(self, filename: str, split_by_branch: bool = False) -> None:
+        """Save vessel surface coordinates.
 
-    def save_surface(self, filename: str, show: bool = False) -> None:
-        """Save surface coordinates and optionally plot surface.
+        Args:
+            filename (str): numpy file name
+            bybranch (bool): if True, saves coordinates split by branch. Otherwise saved as one array.
+        """
+        if split_by_branch:
+            np.save(filename, self.surface_coords)
+        else:
+            np.save(filename, self.coords)
+
+    def save_surface_plot(self, filename: str) -> None:
+        """Save surface plot.
         
         Args:
             filename (str): surface plot filename.
             show (bool): displays surface plot if True. Default is False.
         """
-        plot_surface(self.surface_coords, filename, show)
+        plot_surface(self.surface_coords, filename)
+
+    def save_specs(self, filename: str) -> None:
+        """Save vessel tree specifications in dict.
+        
+        Args:
+            filename (str): json file name.
+        """
+        save_specs(filename, self.vessel_specs)
 
     def generate_projections(self, spline_idx):
         """Generate projection of vessel tree.
@@ -178,7 +190,6 @@ class Generator:
             top_dir (str): top-level folder
         """
         create_nested_dir(top_dir, "surface")
-        if self.flags.save_specs:
-            create_nested_dir(top_dir, "specs")
+        create_nested_dir(top_dir, "specs")
         if self.flags.generate_projections:
             create_nested_dir(top_dir, "projections")
