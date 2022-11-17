@@ -1,6 +1,6 @@
 defaults:
+  - _self_
   - paths: paths
-  - files: files
   - flags: flags
   - geometry: geometry
   - projections: projections
