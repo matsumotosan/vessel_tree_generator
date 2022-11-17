@@ -1,3 +1,4 @@
 random_seed: 0
-save_surface: True
+plot_surface: False
+save_specs: False
 generate_projections: True

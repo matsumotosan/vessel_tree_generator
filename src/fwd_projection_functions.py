@@ -32,6 +32,7 @@ def set_axes_equal(ax):
     ax.set_ylim3d([y_middle - plot_radius, y_middle + plot_radius])
     ax.set_zlim3d([z_middle - plot_radius, z_middle + plot_radius])
 
+
 def place_voxels_in_3D(X, Y, Z, voxel_size, d,h,w):
 
     translated_X = X - w/2
@@ -42,6 +43,7 @@ def place_voxels_in_3D(X, Y, Z, voxel_size, d,h,w):
     spatial_coordinates = scaling * np.stack((translated_X, translated_Y, translated_Z), axis=1)
 
     return spatial_coordinates
+
 
 def ray_image_intersection(voxel, V_source, localX, localY, image_point):
     eps = 1e-6
@@ -58,6 +60,7 @@ def ray_image_intersection(voxel, V_source, localX, localY, image_point):
     scaled_u = np.multiply(scaling, valid_u)
     points = valid_voxels + scaled_u
     return points
+
 
 def get_local_params(theta_array, phi_array, numImg, distanceDetectortoISO, ISO, coord_system_change=True):
     theta = theta_array / 180 * np.pi
@@ -122,6 +125,7 @@ def get_local_params(theta_array, phi_array, numImg, distanceDetectortoISO, ISO,
     V_source = V_source.T
     return V_sensor, V_source, localX, localY
 
+
 def rotate_volume(alpha, beta, gamma, volume_coords):
 
     AP1 = alpha/180*np.pi
@@ -140,6 +144,7 @@ def rotate_volume(alpha, beta, gamma, volume_coords):
 
     rotated_volume = np.dot(volume_coords, rotation_matrix.T)
     return rotated_volume
+
 
 def convert3D_to_pixels(projected_points, plane_index, img_dim, V_sensor, sensorWidth, localX, localY):
     i = plane_index
@@ -164,6 +169,7 @@ def convert3D_to_pixels(projected_points, plane_index, img_dim, V_sensor, sensor
     y = b * img_dim * np.linalg.norm(vy_projected,axis=1) / np.linalg.norm(local_Ymax - local_origin)
     y = img_dim - y
     return np.array([x,y]).T #reverse coords to get value of matrix at [row, col]
+
 
 def convert_clinical_to_standard_angles(clinical_angles):
     '''
@@ -192,7 +198,17 @@ def convert_clinical_to_standard_angles(clinical_angles):
     return theta_array, phi_array
 
 
-def generate_projection_images(surface_coords, spline_index, num_projections, image_dim, save_path, partition, imagerpxspacing=0.35, sid = 0.9, RCA=False):
+def generate_projection_images(
+    surface_coords,
+    spline_index,
+    num_projections,
+    image_dim,
+    save_path,
+    partition,
+    imagerpxspacing=0.35,
+    sid = 0.9,
+    RCA=False
+):
     image_list = []
     SID = np.ones(num_projections)*sid #made these small because of small image (200px), typically 0.9-1.2
     distanceSourcetoISO = 0.75  # distance from source to Isocenter
@@ -264,6 +280,7 @@ def generate_projection_images(surface_coords, spline_index, num_projections, im
                                                        valid_points_in_px[:, 0]), (img_dim, img_dim))
         except:
             print("cannot ravel multi index")
+
         binary_image_unraveled = np.zeros((img_dim * img_dim))
         binary_image_unraveled[valid_points_unraveled] = 1
         binary_image = (binary_image_unraveled.reshape((img_dim, img_dim)) > 0)
@@ -272,11 +289,14 @@ def generate_projection_images(surface_coords, spline_index, num_projections, im
         # plt.imshow(blurred_binary_image, cmap="gray")
         # plt.show()
         if save_path is not None:
-            if not os.path.exists(os.path.join(save_path, partition, "images", partition)):
-                os.makedirs(os.path.join(save_path, partition, "images", partition))
+            if not os.path.exists(os.path.join(save_path, partition, "projections")):
+                os.makedirs(os.path.join(save_path, partition, "projections"))
             plt.imsave(
-                os.path.join(save_path, partition, "images", partition, "image{:04d}{}.png".format(spline_index,suffixes[plane_index])),
-                blurred_binary_image, cmap="gray")
+                os.path.join(save_path, partition, "projections", f"vessel_{spline_index:04d}_{suffixes[plane_index]}.png"),
+                blurred_binary_image,
+                cmap="gray"
+            )
+
         image_list.append(blurred_binary_image)
 
     return image_list, theta_array, phi_array

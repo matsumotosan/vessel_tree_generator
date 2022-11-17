@@ -3,6 +3,7 @@ import random
 import numpy as np
 
 from geomdl import BSpline, operations, utilities
+
 from src.tube_functions import (
     cylinder,
     random_spline,
@@ -34,6 +35,7 @@ def generate_side_branches(
     centerlines = [parent_curve]
     derivatives = [parent_curve_derivative]
     connections = [None]
+
     for i in range(num_branches):
         branch_length = side_branch_properties[i]["length"] * random.uniform(0.8, 1.2)
         positions = (np.array(side_branch_properties[i]["parametric_position"]) * sample_size).astype("int")

@@ -32,8 +32,9 @@ class Files:
 class Flags:
     """Class for storing various options and flags."""
     random_seed: int
-    save_surface: bool
     generate_projections: bool
+    plot_surface: bool
+    save_specs: bool
 
 @dataclass
 class Centerline:
@@ -80,7 +81,6 @@ class Geometry:
 @dataclass
 class Projection:
     """Class for storing projection-related parameters."""
-    generate_projections: bool
     n_projections: bool
     image_dim: int
     pixel_spacing: float
