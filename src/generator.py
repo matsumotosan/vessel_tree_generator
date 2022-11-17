@@ -1,14 +1,60 @@
 import random
-
-import numpy as np
 from typing import List
 
-from src.config import Flags, Geometry, Paths, Projection
+import numpy as np
+
+from src.config import Branch, Flags, Geometry, Paths, Projection
 from src.fwd_projection_functions import generate_projection_images
+from src.generate_child_branches import generate_child_branches
 from src.generate_main_branch import generate_main_branch
-from src.generate_side_branches import generate_side_branches
 from src.get_vessel_surface import get_vessel_surface
 from src.utils import create_nested_dir, plot_surface, save_specs
+
+
+def generate_recursive_tree(
+    branch: Branch,
+    level: int,
+    n_branches: int,
+    length_factor: float,
+    dia_factor: float
+) -> Branch:
+    """Recursively generate branches data structure for vessel generation
+
+    Args:
+        branch (Branch): top-level Branch object
+        level (int): current level
+        n_branches (int): number of child branches per parent branch
+        length_factor (float): length scaling factor per level
+        dia_factor (float): diameter scaling factor per level
+
+    Returns:
+        Branch: nested Branch object
+    """
+    child = Branch(
+        name=f"branch_{level}",
+        min_length=branch.min_length * length_factor,
+        max_length=branch.max_length * length_factor,
+        max_diameter=branch.max_diameter * dia_factor,
+        # control_point_path=branch.control_point_path,
+        parametric_position=branch.parametric_position,
+        children=None
+        # centerline=branch.Centerline,
+        # stenosis=branch.Stenosis
+    )
+    if level == 0:
+        branch.children = [child] * n_branches
+    else:
+        branch.children = [
+            generate_recursive_tree(
+                child,
+                level - 1,
+                n_branches,
+                length_factor,
+                dia_factor
+            )
+        ] * n_branches
+
+    return branch
 
 
 class Generator:
@@ -26,6 +72,7 @@ class Generator:
         paths: Paths,
         flags: Flags,
         geometry: Geometry,
+        main_branch: Branch,
         projection: Projection
     ) -> None:
 
@@ -37,8 +84,16 @@ class Generator:
         self.rng = np.random.default_rng(self.flags.random_seed)
         self.vessel_specs = dict()
 
-        self.geometry.side_branch = [self.geometry.side_branch] * self.geometry.n_branches
-        self.n_points = self.geometry.centerline.supersampling * self.geometry.centerline.num_centerline_points
+        self.branches = generate_recursive_tree(
+            main_branch,
+            self.geometry.n_generations - 1,
+            self.geometry.n_branches,
+            self.geometry.length_factor,
+            self.geometry.dia_factor
+        )
+
+        # self.geometry.side_branch = [self.geometry.side_branch] * self.geometry.n_branches
+        self.n_points = self.geometry.centerline.supersampling * self.geometry.centerline.n_centerline_points
 
     def generate_tree(self) -> None:
         """Generate vessel centerline."""
@@ -55,7 +110,7 @@ class Generator:
         )
 
         # Generate side branch centerlines
-        self.tree, self.d_tree, self.branch_points = generate_side_branches(
+        self.tree, self.d_tree, self.branch_points = generate_child_branches(
             parent_curve=self.cl,
             parent_curve_derivative=self.d_cl,
             num_branches=self.geometry.n_branches,

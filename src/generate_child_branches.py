@@ -12,7 +12,7 @@ from src.tube_functions import (
 )
 
 
-def generate_side_branches(
+def generate_child_branches(
     parent_curve,
     parent_curve_derivative,
     num_branches,

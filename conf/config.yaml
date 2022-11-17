@@ -1,8 +1,36 @@
-defaults:
-  - _self_
-  - paths: paths
-  - flags: flags
-  - geometry: geometry
-  - projections: projections
+# defaults:
+#   - _self_
+#   - paths: paths
+#   - flags: flags
+#   - geometry: geometry
+#   - projections: projections
 
-n_trees: 10
+flags:
+  n_vessels: 20
+  random_seed: 0
+  split_by_branch: True
+  save_surface_plot: True
+  generate_projections: True
+paths:
+  save_dir: trees
+  dataset_name: test_single_config
+  control_point_path: RCA_branch_control_points/moderate
+geometry:
+  n_generations: 2
+  n_branches: 3
+  n_theta: 120
+  length_factor: 0.9
+  dia_factor: 0.6
+  vessel_type: RCA
+branch:
+  name: main
+  min_length: 0.120
+  max_length: 0.140
+  max_diameter: 0.005
+  parametric_position: [0.03, 0.12]
+  children: None
+projections:
+  n_projections: 3
+  image_dim: 512
+  pixel_spacing: 0.35
+  sid: 1.2

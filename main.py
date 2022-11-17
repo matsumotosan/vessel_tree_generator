@@ -23,6 +23,7 @@ def main(cfg: VesselConfig) -> None:
         cfg.paths,
         cfg.flags,
         cfg.geometry,
+        cfg.branch,
         cfg.projections
     )
 
@@ -36,7 +37,7 @@ def main(cfg: VesselConfig) -> None:
     generator.prepare_dirs(tree_dir)
 
     # Initialize progress bar
-    pbar = trange(cfg.n_trees, desc="Generating vessel trees")
+    pbar = trange(cfg.flags.n_vessels)
 
     # Generate vessels
     for idx in pbar:

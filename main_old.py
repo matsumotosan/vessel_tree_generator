@@ -11,7 +11,7 @@ from tqdm import tqdm
 from src.config import VesselConfig
 from src.fwd_projection_functions import *
 from src.generate_main_branch import generate_main_branch
-from src.generate_side_branches import generate_side_branches
+from src.generate_child_branches import generate_side_branches
 from src.get_vessel_surface import get_vessel_surface
 from src.tube_functions import *
 from src.utils import *

@@ -1,4 +1,4 @@
-num_centerline_points: 200
+n_centerline_points: 200
 supersampling: 1
 shear: True
 warp: True

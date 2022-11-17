@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import List, Union
 
@@ -16,25 +18,19 @@ __all__ = [
 
 
 @dataclass
-class Paths:
-    """Class for storing path-related parameters."""
-    # log_dir: str
-    # data_dir: str
-    save_dir: str
-    dataset_name: str
-
-@dataclass
-class Files:
-    """Class for storing file-related parameters."""
-    control_points: str
-
-@dataclass
 class Flags:
     """Class for storing various options and flags."""
+    n_vessels: int
     random_seed: int
     split_by_branch: bool
     save_surface_plot: bool
     generate_projections: bool
+
+@dataclass
+class Paths:
+    """Class for storing path-related parameters."""
+    save_dir: str
+    dataset_name: str
 
 @dataclass
 class Centerline:
@@ -43,17 +39,6 @@ class Centerline:
     supersampling: int
     shear: bool
     warp: bool
-
-@dataclass
-class Branch:
-    """Class for storing branch-related parameters."""
-    name: str
-    min_length: float
-    max_length: float
-    max_diameter: float
-    control_point_path: str
-    parametric_position: List
-    children: Union[None, List['Branch']]
 
 @dataclass
 class Stenosis:
@@ -70,13 +55,27 @@ class Stenosis:
     branch_point: Union[List, None]
 
 @dataclass
+class Branch:
+    """Class for storing branch-related parameters."""
+    name: str
+    min_length: float
+    max_length: float
+    max_diameter: float
+    # control_point_path: str
+    parametric_position: Union[None, List[float]]
+    children: Union[None, List[Branch]]
+    # centerline: Centerline
+    # stenosis: Stenosis
+
+@dataclass
 class Geometry:
     """Super class for storing geometry-related parameters."""
-    centerline: Centerline
-    main_branch: Branch
-    side_branches: List[Branch]
-    stenosis: Stenosis
-    # n_branches: int = len(side_branches)
+    n_generations: int
+    n_branches: int
+    n_theta: int
+    length_factor: float
+    dia_factor: float
+    vessel_type: str
 
 @dataclass
 class Projection:
@@ -89,8 +88,7 @@ class Projection:
 @dataclass
 class VesselConfig:
     """Top-level class for storing all vessel generation-related parameters."""
+    flags: Flags
     paths: Paths
-    # files: Files
     geometry: Geometry
     projection: Projection
-    flags: Flags
