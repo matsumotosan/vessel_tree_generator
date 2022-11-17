@@ -11,7 +11,7 @@ from src.generator import Generator
 cs = ConfigStore.instance()
 cs.store(name="vessel_config", node=VesselConfig)
 
-MSG_WIDTH = 35
+MSG_WIDTH = 34
 
 
 @hydra.main(version_base=None, config_path="conf", config_name="config")
@@ -43,6 +43,8 @@ def main(cfg: VesselConfig) -> None:
         # Generate vessel centerlines
         pbar.set_description(f"Generating vessel {idx:04d} centerline".ljust(MSG_WIDTH))
         generator.generate_tree()
+        
+        # Save vessel generation specs
         # generator.save_specs(
         #     os.path.join(tree_dir, "specs", f"vessel_{idx:04d}_specs")
         # )
@@ -50,13 +52,20 @@ def main(cfg: VesselConfig) -> None:
         # Generate vessel surface
         pbar.set_description(f"Generating vessel {idx:04d} surface".ljust(MSG_WIDTH))
         generator.generate_surface()
+        
+        # Save vessel surface coordinates
+        filename = os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface")
+        if cfg.flags.split_by_branch:
+            filename += "_bybranch"
         generator.save_surface(
-            os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface"),
+            filename,
             split_by_branch=cfg.flags.split_by_branch
         )
+        
+        # Save vessel surface plot
         if cfg.flags.save_surface_plot:
             generator.save_surface_plot(
-                os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface"),
+                os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface")
             )
 
         # Generate projections
