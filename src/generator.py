@@ -1,20 +1,14 @@
-import os
 import random
+
 import numpy as np
+from typing import List
 
-from typing import Union
-
-from src.config import (
-    Paths,
-    Flags,
-    Geometry,
-    Projection
-)
+from src.config import Flags, Geometry, Paths, Projection
 from src.fwd_projection_functions import generate_projection_images
 from src.generate_main_branch import generate_main_branch
 from src.generate_side_branches import generate_side_branches
 from src.get_vessel_surface import get_vessel_surface
-from src.utils import plot_surface, save_specs, create_nested_dir
+from src.utils import create_nested_dir, plot_surface, save_specs
 
 
 class Generator:
@@ -42,7 +36,7 @@ class Generator:
 
         self.rng = np.random.default_rng(self.flags.random_seed)
         self.vessel_specs = dict()
-   
+
         self.geometry.side_branch = [self.geometry.side_branch] * self.geometry.n_branches
         self.n_points = self.geometry.centerline.supersampling * self.geometry.centerline.num_centerline_points
 
@@ -157,7 +151,7 @@ class Generator:
         """
         save_specs(filename, self.vessel_specs)
 
-    def generate_projections(self, spline_idx):
+    def generate_projections(self, spline_idx) -> List[np.ndarray]:
         """Generate projection of vessel tree.
         
         Args:
