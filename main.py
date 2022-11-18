@@ -43,7 +43,7 @@ def main(cfg: VesselConfig) -> None:
     for idx in pbar:
         # Generate vessel centerlines
         pbar.set_description(f"Generating vessel {idx:04d} centerline".ljust(MSG_WIDTH))
-        generator.generate_tree()
+        generator.generate_centerline()
         
         # Save vessel generation specs
         # generator.save_specs(

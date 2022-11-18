@@ -17,7 +17,7 @@ paths:
   control_point_path: RCA_branch_control_points/moderate
 geometry:
   n_generations: 2
-  n_branches: 3
+  n_branches: 2
   n_theta: 120
   length_factor: 0.9
   dia_factor: 0.6
@@ -36,7 +36,7 @@ geometry:
     position: []
     n_points: null
 tree:
-  name: main
+  name: RCA
   min_length: 0.120
   max_length: 0.140
   max_diameter: 0.005

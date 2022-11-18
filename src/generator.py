@@ -11,14 +11,14 @@ from src.get_vessel_surface import get_vessel_surface
 from src.utils import create_nested_dir, plot_surface, save_specs
 
 
-def generate_recursive_tree(
+def generate_topology(
     tree: Tree,
     level: int,
     n_branches: int,
     length_factor: float,
     dia_factor: float
 ) -> Tree:
-    """Recursively generate tree data structure for vessel generation
+    """Recursively generate tree data structure (topology) for vessel generation
 
     Args:
         branch (Tree): top-level Tree object
@@ -44,7 +44,7 @@ def generate_recursive_tree(
         tree.children = [child] * n_branches
     else:
         tree.children = [
-            generate_recursive_tree(child, level - 1, n_branches, length_factor, dia_factor)
+            generate_topology(child, level - 1, n_branches, length_factor, dia_factor)
         ] * n_branches
 
     return tree
@@ -76,7 +76,7 @@ class Generator:
         self.rng = np.random.default_rng(self.flags.random_seed)
         self.vessel_specs = dict()
 
-        self.tree = generate_recursive_tree(
+        self.tree = generate_topology(
             tree,
             self.geometry.n_generations - 1,
             self.geometry.n_branches,
@@ -87,7 +87,7 @@ class Generator:
         # self.geometry.side_branch = [self.geometry.side_branch] * self.geometry.n_branches
         self.n_points = self.geometry.centerline.supersampling * self.geometry.centerline.n_points
 
-    def generate_tree(self) -> None:
+    def generate_centerline(self) -> None:
         """Generate vessel centerline."""
         # Generate main branch centerline
         self.tree.points, self.tree.d_points = generate_main_branch(
@@ -103,12 +103,10 @@ class Generator:
         )
 
         # Generate child branch centerlines recursively
-        self.tree, self.d_tree, self.branch_points = generate_child_branches(
-            parent_curve=self.cl,
-            parent_curve_derivative=self.d_cl,
-            num_branches=self.geometry.n_branches,
-            sample_size=self.n_points,
-            side_branch_properties=self.geometry.side_branch,
+        self.tree.children = generate_child_branches(
+            parent_points=self.tree.points,
+            children=self.tree.children,
+            n_points=self.n_points,
             curve_type=self.geometry.vessel_type
         )
 
@@ -123,13 +121,13 @@ class Generator:
             if tree_idx == 0:   # main branch
                 key = "main_branch"
                 is_main_branch = True
-                
+
                 rand_stenoses = np.random.randint(0, 3)
                 max_radius = [random.uniform(0.004, self.geometry.main_branch.max_diameter) / 2]
             else:   # side branch
                 key = f"branch_{tree_idx}"
                 is_main_branch = False
-                
+
                 rand_stenoses = np.random.randint(0, 2)
                 max_radius = [
                     random.uniform(
@@ -141,7 +139,7 @@ class Generator:
             percent_stenosis = None
             stenosis_pos = None
             num_stenosis_points = None
-            
+
             # Generate surface from centerline
             surface, R, stenosis_percent, stenosis_pos, n_stenosis_points = get_vessel_surface(
                 curve=C,
@@ -159,17 +157,17 @@ class Generator:
                 stenosis_type=self.geometry.stenoses.type,
                 return_surface=True
             )
-            
+
             # Append to list of centerline + radial coordinate
             spline_array = np.concatenate((C, np.expand_dims(R, axis=-1)), axis=1)[::self.geometry.centerline.supersampling,:]
             self.spline_array_list.append(spline_array)
 
             # Append to list of surface coordinates (x,y,z) by branch
             self.surface_coords.append(surface)
-            
+
             # Append to array coordinates of entire vessel
             self.coords = np.concatenate((self.coords, surface.reshape(-1, 3)))
-    
+
     def save_surface(self, filename: str, split_by_branch: bool = False) -> None:
         """Save vessel surface coordinates.
 
@@ -184,7 +182,7 @@ class Generator:
 
     def save_surface_plot(self, filename: str) -> None:
         """Save surface plot.
-        
+
         Args:
             filename (str): surface plot filename.
             show (bool): displays surface plot if True. Default is False.
@@ -201,7 +199,7 @@ class Generator:
 
     def generate_projections(self, spline_idx) -> List[np.ndarray]:
         """Generate projection of vessel tree.
-        
+
         Args:
             spline_idx (int): index of vessel tree
         """

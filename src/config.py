@@ -65,8 +65,8 @@ class Tree:
     max_diameter: float
     parametric_position: Union[None, List[float]]
     children: Union[None, List[Tree]]
-    points: Union[None, List[float]]
-    d_points: Union[None, List[float]]
+    points: Union[None, List[List[float]]]
+    d_points: Union[None, List[List[float]]]
 
 @dataclass
 class Geometry:
