@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from src.config import Branch, Flags, Geometry, Paths, Projection
+from src.config import Tree, Flags, Geometry, Paths, Projection
 from src.fwd_projection_functions import generate_projection_images
 from src.generate_child_branches import generate_child_branches
 from src.generate_main_branch import generate_main_branch
@@ -12,49 +12,42 @@ from src.utils import create_nested_dir, plot_surface, save_specs
 
 
 def generate_recursive_tree(
-    branch: Branch,
+    tree: Tree,
     level: int,
     n_branches: int,
     length_factor: float,
     dia_factor: float
-) -> Branch:
-    """Recursively generate branches data structure for vessel generation
+) -> Tree:
+    """Recursively generate tree data structure for vessel generation
 
     Args:
-        branch (Branch): top-level Branch object
+        branch (Tree): top-level Tree object
         level (int): current level
         n_branches (int): number of child branches per parent branch
         length_factor (float): length scaling factor per level
         dia_factor (float): diameter scaling factor per level
 
     Returns:
-        Branch: nested Branch object
+        Branch: nested Tree dataclass object
     """
-    child = Branch(
+    child = Tree(
         name=f"branch_{level}",
-        min_length=branch.min_length * length_factor,
-        max_length=branch.max_length * length_factor,
-        max_diameter=branch.max_diameter * dia_factor,
-        # control_point_path=branch.control_point_path,
-        parametric_position=branch.parametric_position,
-        children=None
-        # centerline=branch.Centerline,
-        # stenosis=branch.Stenosis
+        min_length=tree.min_length * length_factor,
+        max_length=tree.max_length * length_factor,
+        max_diameter=tree.max_diameter * dia_factor,
+        parametric_position=tree.parametric_position,
+        children=None,
+        points=[],
+        d_points=[]
     )
     if level == 0:
-        branch.children = [child] * n_branches
+        tree.children = [child] * n_branches
     else:
-        branch.children = [
-            generate_recursive_tree(
-                child,
-                level - 1,
-                n_branches,
-                length_factor,
-                dia_factor
-            )
+        tree.children = [
+            generate_recursive_tree(child, level - 1, n_branches, length_factor, dia_factor)
         ] * n_branches
 
-    return branch
+    return tree
 
 
 class Generator:
@@ -66,13 +59,12 @@ class Generator:
         geometry (Geometry): Geometry object
         projection (Projection): Projection object
     """
-    
     def __init__(
         self,
         paths: Paths,
         flags: Flags,
         geometry: Geometry,
-        main_branch: Branch,
+        tree: Tree,
         projection: Projection
     ) -> None:
 
@@ -84,8 +76,8 @@ class Generator:
         self.rng = np.random.default_rng(self.flags.random_seed)
         self.vessel_specs = dict()
 
-        self.branches = generate_recursive_tree(
-            main_branch,
+        self.tree = generate_recursive_tree(
+            tree,
             self.geometry.n_generations - 1,
             self.geometry.n_branches,
             self.geometry.length_factor,
@@ -93,23 +85,24 @@ class Generator:
         )
 
         # self.geometry.side_branch = [self.geometry.side_branch] * self.geometry.n_branches
-        self.n_points = self.geometry.centerline.supersampling * self.geometry.centerline.n_centerline_points
+        self.n_points = self.geometry.centerline.supersampling * self.geometry.centerline.n_points
 
     def generate_tree(self) -> None:
         """Generate vessel centerline."""
         # Generate main branch centerline
-        self.cl, self.d_cl = generate_main_branch(
+        self.tree.points, self.tree.d_points = generate_main_branch(
             vessel_type=self.geometry.vessel_type,
-            min_length=self.geometry.main_branch.min_length,
-            max_length=self.geometry.main_branch.max_length,
+            min_length=self.tree.min_length,
+            max_length=self.tree.max_length,
             n_points=self.n_points,
+            aslist=True,
             control_point_path=self.paths.control_point_path,
             rng=self.rng,
             shear=self.geometry.centerline.shear,
-            warp=self.geometry.centerline.warp
+            warp=self.geometry.centerline.warp,
         )
 
-        # Generate side branch centerlines
+        # Generate child branch centerlines recursively
         self.tree, self.d_tree, self.branch_points = generate_child_branches(
             parent_curve=self.cl,
             parent_curve_derivative=self.d_cl,

@@ -22,13 +22,28 @@ geometry:
   length_factor: 0.9
   dia_factor: 0.6
   vessel_type: RCA
-branch:
+  centerline:
+    n_points: 200
+    supersampling: 1
+    shear: True
+    warp: True
+  stenosis:
+    n_stenoses: null
+    constant_radius: True
+    min_radius: null
+    max_radius: null
+    severity: []
+    position: []
+    n_points: null
+tree:
   name: main
   min_length: 0.120
   max_length: 0.140
   max_diameter: 0.005
   parametric_position: [0.03, 0.12]
-  children: None
+  children: []
+  points: null
+  d_points: null
 projections:
   n_projections: 3
   image_dim: 512

@@ -1,7 +1,11 @@
-from src.tube_functions import *
+import os
+import random
+import numpy as np
+
+from src.tube_functions import cylinder, random_spline, RCA_vessel_curve
 
 
-def generate_main_branch(vessel_type, min_length, max_length, n_points, **kwargs):
+def generate_main_branch(vessel_type, min_length, max_length, n_points, aslist=False, **kwargs):
     """Generates main branch for a given vessel type.
     
     Parameters:
@@ -42,4 +46,7 @@ def generate_main_branch(vessel_type, min_length, max_length, n_points, **kwargs
     else:
         raise ValueError(f"Tree generation for {vessel_type} vessel type is not available.")
     
-    return main_C, main_dC
+    if aslist:
+        return main_C.tolist(), main_dC.tolist()
+    else:
+        return main_C, main_dC

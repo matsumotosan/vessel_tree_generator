@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import numpy as np
 from dataclasses import dataclass
-from typing import List, Union
+from nptyping import NDArray, Float
+from typing import Any, List, Union
 
 
 __all__ = [
@@ -9,7 +11,7 @@ __all__ = [
     "Files",
     "Flags",
     "Centerline",
-    "Branch",
+    "Tree",
     "Stenosis",
     "Geometry",
     "Projection",
@@ -55,17 +57,16 @@ class Stenosis:
     branch_point: Union[List, None]
 
 @dataclass
-class Branch:
+class Tree:
     """Class for storing branch-related parameters."""
     name: str
     min_length: float
     max_length: float
     max_diameter: float
-    # control_point_path: str
     parametric_position: Union[None, List[float]]
-    children: Union[None, List[Branch]]
-    # centerline: Centerline
-    # stenosis: Stenosis
+    children: Union[None, List[Tree]]
+    points: Union[None, List[float]]
+    d_points: Union[None, List[float]]
 
 @dataclass
 class Geometry:
@@ -76,6 +77,8 @@ class Geometry:
     length_factor: float
     dia_factor: float
     vessel_type: str
+    centerline: Centerline
+    stenosis: Stenosis
 
 @dataclass
 class Projection:

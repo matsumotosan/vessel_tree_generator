@@ -23,7 +23,7 @@ def main(cfg: VesselConfig) -> None:
         cfg.paths,
         cfg.flags,
         cfg.geometry,
-        cfg.branch,
+        cfg.tree,
         cfg.projections
     )
 
