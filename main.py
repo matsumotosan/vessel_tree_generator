@@ -1,5 +1,4 @@
 import os
-
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
@@ -53,7 +52,7 @@ def main(cfg: VesselConfig) -> None:
         # Generate vessel surface
         pbar.set_description(f"Generating vessel {idx:04d} surface".ljust(MSG_WIDTH))
         generator.generate_surface()
-        
+
         # Save vessel surface coordinates
         filename = os.path.join(tree_dir, "surface", f"vessel_{idx:04d}_surface")
         if cfg.flags.split_by_branch:
@@ -62,7 +61,7 @@ def main(cfg: VesselConfig) -> None:
             filename,
             split_by_branch=cfg.flags.split_by_branch
         )
-        
+
         # Save vessel surface plot
         if cfg.flags.save_surface_plot:
             generator.save_surface_plot(
