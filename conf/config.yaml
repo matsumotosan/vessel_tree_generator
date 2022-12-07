@@ -6,7 +6,7 @@
 #   - projections: projections
 
 flags:
-  n_vessels: 20
+  n_vessels: 1
   random_seed: 0
   split_by_branch: True
   save_surface_plot: True

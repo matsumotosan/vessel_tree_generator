@@ -3,7 +3,7 @@ from typing import List
 
 import numpy as np
 
-from src.config import Tree, Flags, Geometry, Paths, Projection
+from src.config import Branch, Flags, Geometry, Paths, Projection
 from src.fwd_projection_functions import generate_projection_images
 from src.generate_child_branches import generate_child_branches
 from src.generate_main_branch import generate_main_branch
@@ -12,46 +12,46 @@ from src.utils import create_nested_dir, plot_surface, save_specs
 
 
 def generate_topology(
-    tree: Tree,
+    branch: Branch,
     level: int,
     n_branches: int,
     length_factor: float,
     dia_factor: float
-) -> Tree:
-    """Recursively generate tree data structure (topology) for vessel generation
+) -> Branch:
+    """Recursively generate branch data structure (topology) for vessel generation
 
     Args:
-        branch (Tree): top-level Tree object
+        branch (Branch): top-level Branch object
         level (int): current level
         n_branches (int): number of child branches per parent branch
         length_factor (float): length scaling factor per level
         dia_factor (float): diameter scaling factor per level
 
     Returns:
-        Branch: nested Tree dataclass object
+        Branch: nested Branch dataclass object
     """
-    child = Tree(
+    child = Branch(
         name=f"branch_{level}",
-        min_length=tree.min_length * length_factor,
-        max_length=tree.max_length * length_factor,
-        max_diameter=tree.max_diameter * dia_factor,
-        parametric_position=tree.parametric_position,
+        min_length=branch.min_length * length_factor,
+        max_length=branch.max_length * length_factor,
+        max_diameter=branch.max_diameter * dia_factor,
+        parametric_position=branch.parametric_position,
         children=None,
         points=[],
         d_points=[]
     )
     if level == 0:
-        tree.children = [child] * n_branches
+        branch.children = [child] * n_branches
     else:
-        tree.children = [
+        branch.children = [
             generate_topology(child, level - 1, n_branches, length_factor, dia_factor)
         ] * n_branches
 
-    return tree
+    return branch
 
 
 class Generator:
-    """Generator class for procedurally generating vessel trees of arbitrary depth.
+    """Generator class for procedurally generating vessel branchs of arbitrary depth.
     
     Args:
         paths (Paths): Paths object
@@ -64,7 +64,7 @@ class Generator:
         paths: Paths,
         flags: Flags,
         geometry: Geometry,
-        tree: Tree,
+        branch: Branch,
         projection: Projection
     ) -> None:
 
@@ -76,8 +76,8 @@ class Generator:
         self.rng = np.random.default_rng(self.flags.random_seed)
         self.vessel_specs = dict()
 
-        self.tree = generate_topology(
-            tree,
+        self.branch = generate_topology(
+            branch,
             self.geometry.n_generations - 1,
             self.geometry.n_branches,
             self.geometry.length_factor,
@@ -90,10 +90,10 @@ class Generator:
     def generate_centerline(self) -> None:
         """Generate vessel centerline."""
         # Generate main branch centerline
-        self.tree.points, self.tree.d_points = generate_main_branch(
+        self.branch.points, self.branch.d_points = generate_main_branch(
             vessel_type=self.geometry.vessel_type,
-            min_length=self.tree.min_length,
-            max_length=self.tree.max_length,
+            min_length=self.branch.min_length,
+            max_length=self.branch.max_length,
             n_points=self.n_points,
             aslist=True,
             control_point_path=self.paths.control_point_path,
@@ -103,9 +103,9 @@ class Generator:
         )
 
         # Generate child branch centerlines recursively
-        self.tree.children = generate_child_branches(
-            parent_points=self.tree.points,
-            children=self.tree.children,
+        self.branch.children = generate_child_branches(
+            parent_points=self.branch.points,
+            children=self.branch.children,
             n_points=self.n_points,
             curve_type=self.geometry.vessel_type
         )
@@ -117,22 +117,22 @@ class Generator:
         self.surface_coords = []         # (x,y,z) surface coordinates
         self.coords = np.empty((0, 3))
 
-        for tree_idx, (C, dC) in enumerate(zip(self.tree, self.d_tree)):
-            if tree_idx == 0:   # main branch
+        for branch_idx, (C, dC) in enumerate(zip(self.branch, self.d_branch)):
+            if branch_idx == 0:   # main branch
                 key = "main_branch"
                 is_main_branch = True
 
                 rand_stenoses = np.random.randint(0, 3)
                 max_radius = [random.uniform(0.004, self.geometry.main_branch.max_diameter) / 2]
             else:   # side branch
-                key = f"branch_{tree_idx}"
+                key = f"branch_{branch_idx}"
                 is_main_branch = False
 
                 rand_stenoses = np.random.randint(0, 2)
                 max_radius = [
                     random.uniform(
-                        self.geometry.side_branch[tree_idx - 1].min_radius,
-                        self.geometry.side_branch[tree_idx - 1].max_radius
+                        self.geometry.side_branch[branch_idx - 1].min_radius,
+                        self.geometry.side_branch[branch_idx - 1].max_radius
                         )
                     ]
 
@@ -190,7 +190,7 @@ class Generator:
         plot_surface(self.surface_coords, filename)
 
     def save_specs(self, filename: str) -> None:
-        """Save vessel tree specifications in dict.
+        """Save vessel branch specifications in dict.
         
         Args:
             filename (str): json file name.
@@ -198,10 +198,10 @@ class Generator:
         save_specs(filename, self.vessel_specs)
 
     def generate_projections(self, spline_idx) -> List[np.ndarray]:
-        """Generate projection of vessel tree.
+        """Generate projection of vessel branch.
 
         Args:
-            spline_idx (int): index of vessel tree
+            spline_idx (int): index of vessel branch
         """
         centered_coords = np.subtract(
             self.coords,
